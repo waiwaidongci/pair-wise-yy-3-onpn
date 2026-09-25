@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>岩芯样本切片实验室 · 制片交接</title>
+  <style>
+    :root { --bg:#f1f3ef; --panel:#fff; --ink:#242822; --muted:#687062; --line:#d7ddd1; --accent:#526f43; --danger:#a33a2e; --warn:#9a6a12; --ok:#3f7a4c; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial,"PingFang SC",sans-serif; }
+    header { padding:22px 28px; background:#fff; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    h1 { margin:0; font-size:24px; }
+    main { display:grid; grid-template-columns:390px 1fr; gap:22px; padding:22px 28px; align-items:start; }
+    form,.panel,.card,.stat,.modal-box { background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px; }
+    h2 { margin:0 0 12px; font-size:18px; }
+    label { display:block; margin:10px 0 5px; color:var(--muted); font-size:13px; }
+    input,select,textarea { width:100%; border:1px solid var(--line); border-radius:6px; padding:9px; font:inherit; background:#fff; }
+    textarea { min-height:64px; resize:vertical; }
+    button { border:0; border-radius:6px; background:var(--accent); color:#fff; padding:9px 13px; font-weight:700; cursor:pointer; }
+    button.ghost { background:#fff; color:var(--accent); border:1px solid var(--accent); }
+    button.review { background:#8a6d3b; }
+    button:disabled { background:#b8bfb0; cursor:not-allowed; }
+    .meta { color:var(--muted); font-size:13px; }
+    .pill { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:3px 9px; font-size:12px; white-space:nowrap; }
+    .pill.制片中 { background:#eef2e8; color:var(--accent); }
+    .pill.待观察 { background:#e7f0e9; color:var(--ok); }
+    .pill.已交付 { background:#eee; color:var(--muted); }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+    .stat strong { display:block; font-size:22px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:12px; }
+    .card { display:grid; gap:8px; }
+    .card h3 { margin:0; font-size:17px; }
+    .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+    .owner-line { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; font-size:13px; }
+    .owner-line b { font-size:14px; }
+    .review-ok { color:var(--ok); font-weight:700; }
+    .review-bad { color:var(--danger); font-weight:700; }
+    .slice { border-top:1px dashed var(--line); padding-top:10px; display:grid; gap:8px; }
+    .slice-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .phase { font-size:12px; border-radius:4px; padding:2px 7px; }
+    .phase.待交接 { background:#f0efe6; color:var(--warn); }
+    .phase.待复核 { background:#f3e9da; color:#8a6d3b; }
+    .phase.完成 { background:#e7f0e9; color:var(--ok); }
+    .pipeline { display:flex; gap:6px; flex-wrap:wrap; }
+    .pipeline .node { font-size:12px; border:1px solid var(--line); border-radius:6px; padding:3px 8px; color:var(--muted); background:#fafbF8; }
+    .pipeline .node.passed { border-color:var(--ok); color:var(--ok); background:#f0f6f1; }
+    .pipeline .node.current { border-color:var(--accent); color:var(--accent); font-weight:700; background:#eef2e8; }
+    .pipeline .node.returned { border-color:var(--danger); color:var(--danger); background:#f9eeec; font-weight:700; }
+    .reason-box { background:#f9eeec; border:1px solid #e3c4be; color:var(--danger); border-radius:6px; padding:8px 10px; font-size:13px; }
+    .pending-box { background:#f8f4ec; border:1px solid #e2d5bf; border-radius:6px; padding:8px 10px; font-size:13px; display:grid; gap:3px; }
+    .actions { display:flex; gap:8px; }
+    .batchbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .batchbar .b { font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 9px; background:#fff; color:var(--muted); }
+    .batchbar .b.expired { border-color:#e3c4be; color:var(--danger); background:#f9eeec; }
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(30,34,28,.45); z-index:10; padding:24px; overflow:auto; }
+    .modal-backdrop.open { display:block; }
+    .modal-box { max-width:520px; margin:0 auto; display:grid; gap:6px; }
+    .modal-box h2 { display:flex; justify-content:space-between; align-items:center; }
+    .close { background:none; color:var(--muted); font-size:20px; padding:0 4px; }
+    .conflicts { background:#f9eeec; border:1px solid #e3c4be; border-radius:6px; padding:10px 12px; margin:6px 0; display:none; }
+    .conflicts.open { display:block; }
+    .conflicts li { color:var(--danger); font-size:13px; margin:3px 0; }
+    .seg { display:flex; gap:8px; }
+    .seg button { flex:1; background:#fff; color:var(--muted); border:1px solid var(--line); }
+    .seg button.on.pass { background:var(--ok); color:#fff; border-color:var(--ok); }
+    .seg button.on.fail { background:var(--danger); color:#fff; border-color:var(--danger); }
+    .addrow { display:flex; gap:6px; margin-top:6px; }
+    .addrow input { flex:1; }
+    @media (max-width:950px){ header{display:block;padding:18px 16px;} main{grid-template-columns:1fr;padding:16px;} }
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>岩芯样本切片实验室 · 制片交接</h1><div class="meta">取样 → 切割 → 研磨 → 染色，逐道交接、复核放行；记录操作人、耗材批次与观察结果</div></div>
+    <button id="reload" class="ghost">刷新</button>
+  </header>
+  <main>
+    <form id="form">
+      <h2>创建岩芯样本</h2>
+      <label>项目</label><input name="project" required>
+      <label>钻孔编号</label><input name="borehole" required>
+      <label>岩芯箱号</label><input name="coreBox" required>
+      <label>取样深度</label><input name="depth" required>
+      <label>负责人（当前责任人初始值）</label><input name="owner" required>
+      <label>初始切片编号</label><input name="sliceId" required>
+      <label>染色方法</label><input name="method" required placeholder="如：茜素红染色 / 不染色">
+      <button style="margin-top:12px">保存样本</button>
+    </form>
+    <section>
+      <div class="stats" id="stats"></div>
+      <div class="panel" style="margin-bottom:14px;">
+        <h2 style="font-size:15px;">染色 / 耗材批次</h2>
+        <div class="batchbar" id="batches"></div>
+        <div class="meta">染色交接时选择染色批次；已过期批次即使选中也会被拒绝保存。</div>
+      </div>
+      <div class="grid" id="samples"></div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-box">
+      <h2><span id="modalTitle"></span><button class="close" id="modalClose">×</button></h2>
+      <div class="meta" id="modalSub"></div>
+      <ul class="conflicts" id="conflicts"></ul>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    let samples = [];
+    let batches = [];
+
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
+    const localNow = () => {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    };
+    const fmtTime = (iso) => iso ? new Date(iso).toLocaleString("zh-CN", { hour12:false }) : "—";
+
+    async function api(path, options) {
+      const res = await fetch(path, options && options.body ? { ...options, headers:{ "Content-Type":"application/json" } } : options);
+      const data = await res.json();
+      if (!res.ok) {
+        const err = new Error(data.error || "请求失败");
+        err.conflicts = data.conflicts || null;
+        throw err;
+      }
+      return data;
+    }
+
+    function renderStats() {
+      const keys = ["制片中", "待观察", "已交付"];
+      document.querySelector("#stats").innerHTML = keys.map(s =>
+        '<div class="stat"><span class="meta">'+s+'</span><strong>'+samples.filter(item => item.status === s).length+'</strong></div>'
+      ).join("");
+    }
+
+    function renderBatches() {
+      const now = Date.now();
+      document.querySelector("#batches").innerHTML = batches.map(b => {
+        const expired = b.category === "染色" && b.expireAt && new Date(b.expireAt).getTime() < now;
+        return '<span class="b'+(expired ? " expired" : "")+'">'+esc(b.category)+" · "+esc(b.batchNo)+
+          (b.expireAt ? (expired ? "（已过期 " : "（有效期至 ") + esc(b.expireAt.slice(0,10)) + "）") : "（无有效期）")+'</span>';
+      }).join("");
+    }
+
+    function reviewLine(slice) {
+      const r = slice.latestReview;
+      if (!r) return '<span class="meta">最近复核：暂无</span>';
+      const cls = r.passed ? "review-ok" : "review-bad";
+      const text = r.passed ? "通过" : "不通过";
+      return '<span class="meta">最近复核：<b class="'+cls+'">'+esc(r.step)+" · "+text+'</b> '+esc(r.reviewer)+" "+fmtTime(r.at)+
+        (r.passed ? "" : '（'+esc(r.reason)+'）')+'</span>';
+    }
+
+    function renderSlice(sampleId, slice) {
+      const nodes = slice.pipeline.map(n =>
+        '<span class="node '+n.state+'">'+esc(n.step)+(n.state === "passed" ? " ✓" : n.state === "returned" ? " ↺" : "")+'</span>'
+      ).join('<span class="meta">→</span>');
+
+      let notice = "";
+      if (slice.canReview && slice.pendingHandoff) {
+        const p = slice.pendingHandoff;
+        notice = '<div class="pending-box"><b>待复核交接单</b>'+
+          '<span>操作人：'+esc(p.operator)+'｜拟交复核人：'+esc(p.reviewer)+'</span>'+
+          '<span>耗材批次：'+esc(p.consumableBatch)+'</span>'+
+          '<span>观察结果：'+esc(p.observation)+'</span>'+
+          '<span>交接（完成）时间：'+fmtTime(p.completedAt)+'</span></div>';
+      } else if (slice.returnedReason) {
+        notice = '<div class="reason-box">最近复核退回原因：'+esc(slice.returnedReason)+'，请在当前工序「'+esc(slice.step)+'」整改后重新交接。</div>';
+      } else if (slice.done) {
+        notice = '<div class="meta">四道工序全部复核通过，制片完成。</div>';
+      }
+
+      return '<div class="slice">'+
+        '<div class="slice-head"><b>'+esc(slice.id)+'</b><span class="phase '+esc(slice.phase)+'">'+
+          (slice.done ? "完成" : esc(slice.step)+" · "+esc(slice.phase))+'</span></div>'+
+        '<div class="meta">'+esc(slice.method)+'｜当前责任人：<b>'+esc(slice.currentOwner)+'</b>（'+esc(slice.ownerRole)+'）</div>'+
+        '<div class="pipeline">'+nodes+'</div>'+
+        reviewLine(slice)+
+        notice+
+        '<div class="actions">'+
+          '<button data-handoff="'+sampleId+'|'+esc(slice.id)+'" '+(slice.canHandoff ? "" : "disabled")+'>交接 / 送复核</button>'+
+          '<button class="review" data-review="'+sampleId+'|'+esc(slice.id)+'" '+(slice.canReview ? "" : "disabled")+'>复核</button>'+
+        '</div>'+
+      '</div>';
+    }
+
+    function renderSamples() {
+      document.querySelector("#samples").innerHTML = samples.map(sample => {
+        const addRow = sample.delivery === "已交付" ? "" :
+          '<div class="addrow"><input data-new-slice="'+esc(sample.id)+'" placeholder="新增切片编号">'+
+          '<input data-method="'+esc(sample.id)+'" placeholder="染色方法" style="max-width:140px">'+
+          '<button class="ghost" data-add="'+esc(sample.id)+'">添加切片</button></div>';
+        const canDeliver = sample.slices.length > 0 && sample.slices.every(s => s.done) && sample.delivery !== "已交付";
+        return '<article class="card">'+
+          '<div class="card-head"><h3>'+esc(sample.project)+'</h3><span class="pill '+esc(sample.status)+'">'+esc(sample.status)+'</span></div>'+
+          '<div class="meta">'+esc(sample.borehole)+' · '+esc(sample.coreBox)+' · '+esc(sample.depth)+'</div>'+
+          '<div class="owner-line">样本当前责任人：<b>'+esc(sample.currentOwner)+'</b>'+
+            (sample.delivery === "已交付" ? '<span class="pill">已交付</span>' : "")+'</div>'+
+          sample.slices.map(slice => renderSlice(sample.id, slice)).join("")+
+          addRow+
+          '<div class="actions"><button data-deliver="'+esc(sample.id)+'" '+(canDeliver ? "" : "disabled")+'>标记交付观察</button></div>'+
+        '</article>';
+      }).join("");
+    }
+
+    async function load() {
+      [samples, batches] = await Promise.all([api("/api/samples"), api("/api/reagent-batches")]);
+      renderStats(); renderBatches(); renderSamples();
+    }
+
+    // —— 弹窗：交接与复核共用，表单结构即“请求入口”，提交后由服务端判定 ——
+    const backdrop = document.querySelector("#modalBackdrop");
+    const modalTitle = document.querySelector("#modalTitle");
+    const modalSub = document.querySelector("#modalSub");
+    const modalBody = document.querySelector("#modalBody");
+    const conflictsEl = document.querySelector("#conflicts");
+
+    function closeModal() { backdrop.classList.remove("open"); }
+    document.querySelector("#modalClose").onclick = closeModal;
+    backdrop.onclick = (e) => { if (e.target === backdrop) closeModal(); };
+
+    function showConflicts(conflicts) {
+      conflictsEl.innerHTML = (conflicts || [{ message:"请求失败" }]).map(c => "<li>"+esc(c.message)+"</li>").join("");
+      conflictsEl.classList.add("open");
+    }
+    function clearConflicts() { conflictsEl.classList.remove("open"); conflictsEl.innerHTML = ""; }
+
+    function findSlice(sampleId, sliceId) {
+      const sample = samples.find(s => s.id === sampleId);
+      return { sample, slice: sample && sample.slices.find(s => s.id === sliceId) };
+    }
+
+    function batchOptions(selectedStep) {
+      return batches.map(b => {
+        const expired = b.category === "染色" && b.expireAt && new Date(b.expireAt).getTime() < Date.now();
+        return '<option value="'+esc(b.batchNo)+'">'+esc(b.name)+(expired ? "（已过期）" : "")+'</option>';
+      }).join("");
+    }
+
+    function openHandoff(sampleId, sliceId) {
+      const { sample, slice } = findSlice(sampleId, sliceId);
+      if (!slice || !slice.canHandoff) return;
+      clearConflicts();
+      modalTitle.textContent = "工序交接 · " + slice.step;
+      modalSub.textContent = sample.project + " / " + slice.id + "：填写后送复核；上一道未复核通过或存在冲突时不会保存。";
+      modalBody.innerHTML =
+        (slice.returnedReason ? '<div class="reason-box">上次退回原因：'+esc(slice.returnedReason)+'</div>' : "")+
+        '<form id="handoffForm">'+
+        '<label>操作人（本班完成人）</label><input name="operator" required value="'+esc(sample.owner)+'">'+
+        '<label>拟交复核人（下一班）</label><input name="reviewer" required value="周敏">'+
+        '<label>耗材批次</label><input name="consumableBatch" list="batchList" required placeholder="选择或填写批次号">'+
+        '<datalist id="batchList">'+batchOptions()+'</datalist>'+
+        '<label>观察结果</label><textarea name="observation" required placeholder="本道工序的观察、测量与异常情况"></textarea>'+
+        '<label>交接时间（实际完成时间）</label><input name="handoffAt" type="datetime-local" step="1" required value="'+localNow()+'">'+
+        '<div style="margin-top:12px"><button type="submit">提交交接并送复核</button></div></form>';
+
+      modalBody.querySelector("#handoffForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        try {
+          const payload = Object.fromEntries(f.entries());
+          payload.step = slice.step;
+          await api("/api/samples/"+sampleId+"/slices/"+sliceId+"/handoffs", { method:"POST", body: JSON.stringify(payload) });
+          closeModal(); await load();
+        } catch (err) { showConflicts(err.conflicts); }
+      };
+      backdrop.classList.add("open");
+    }
+
+    let reviewPassed = true;
+    function openReview(sampleId, sliceId) {
+      const { sample, slice } = findSlice(sampleId, sliceId);
+      if (!slice || !slice.canReview) return;
+      clearConflicts();
+      reviewPassed = true;
+      modalTitle.textContent = "复核 · " + slice.step;
+      modalSub.textContent = sample.project + " / " + slice.id + "：不通过将退回当前工序，必须填写退回原因。";
+      renderReviewBody(sampleId, sliceId, slice);
+      backdrop.classList.add("open");
+    }
+
+    function renderReviewBody(sampleId, sliceId, slice) {
+      modalBody.innerHTML =
+        '<form id="reviewForm">'+
+        '<label>复核人</label><input name="reviewer" required value="'+esc(slice.pendingHandoff.reviewer)+'">'+
+        '<label>复核结果</label>'+
+        '<div class="seg">'+
+          '<button type="button" id="segPass" class="on pass">通过，进入下一道</button>'+
+          '<button type="button" id="segFail" class="">不通过，退回整改</button></div>'+
+        '<div id="reasonWrap" style="display:none"><label>退回原因</label>'+
+        '<textarea name="reason" placeholder="说明不通过原因，将随交接单留痕"></textarea></div>'+
+        '<div style="margin-top:12px"><button type="submit">提交复核</button></div></form>';
+
+      const segPass = modalBody.querySelector("#segPass");
+      const segFail = modalBody.querySelector("#segFail");
+      const reasonWrap = modalBody.querySelector("#reasonWrap");
+      segPass.onclick = () => { reviewPassed = true; segPass.className = "on pass"; segFail.className = ""; reasonWrap.style.display = "none"; };
+      segFail.onclick = () => { reviewPassed = false; segFail.className = "on fail"; segPass.className = ""; reasonWrap.style.display = "block"; };
+
+      modalBody.querySelector("#reviewForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        try {
+          const payload = { reviewer: f.get("reviewer"), passed: reviewPassed };
+          if (!reviewPassed) payload.reason = f.get("reason");
+          await api("/api/samples/"+sampleId+"/slices/"+sliceId+"/reviews", { method:"POST", body: JSON.stringify(payload) });
+          closeModal(); await load();
+        } catch (err) { showConflicts(err.conflicts); }
+      };
+    }
+
+    document.body.addEventListener("click", async (e) => {
+      const t = e.target;
+      if (t.id === "reload") return load();
+      if (t.dataset.handoff) { const [sid, lid] = t.dataset.handoff.split("|"); openHandoff(sid, lid); return; }
+      if (t.dataset.review) { const [sid, lid] = t.dataset.review.split("|"); openReview(sid, lid); return; }
+      if (t.dataset.add) {
+        const id = t.dataset.add;
+        const sliceId = document.querySelector('[data-new-slice="'+id+'"]').value;
+        const method = document.querySelector('[data-method="'+id+'"]').value || "未指定";
+        try { await api("/api/samples/"+id+"/slices", { method:"POST", body: JSON.stringify({ id: sliceId, method }) }); await load(); }
+        catch (err) { alert((err.conflicts || []).map(c => c.message).join("\n") || err.message); }
+        return;
+      }
+      if (t.dataset.deliver) {
+        try { await api("/api/samples/"+t.dataset.deliver+"/deliver", { method:"POST", body:"{}" }); await load(); }
+        catch (err) { alert((err.conflicts || []).map(c => c.message).join("\n") || err.message); }
+      }
+    });
+
+    document.querySelector("#form").onsubmit = async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      await api("/api/samples", { method:"POST", body: JSON.stringify(Object.fromEntries(new FormData(form).entries())) });
+      form.reset(); await load();
+    };
+
+    load();
+  </script>
+</body>
+</html>
